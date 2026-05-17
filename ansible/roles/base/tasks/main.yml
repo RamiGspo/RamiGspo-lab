@@ -1,0 +1,13 @@
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - tmux
+      - tree
+      - curl
+      - wget
+      - vim
+      - neovim
+      - mc
+    state: present
+    update_cache: true
