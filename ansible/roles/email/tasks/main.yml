@@ -1,0 +1,6 @@
+- name: Install email client
+  ansible.builtin.apt:
+    name:
+      - neomutt
+    state: present
+    update_cache: true
