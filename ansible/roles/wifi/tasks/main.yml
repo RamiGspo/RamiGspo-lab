@@ -1,0 +1,59 @@
+---
+- name: Enable RevPi external antenna
+  ansible.builtin.command: revpi-config enable external-antenna
+  register: antenna_result
+  changed_when: "'already enabled' not in antenna_result.stdout"
+
+- name: Reboot after enabling external antenna
+  ansible.builtin.reboot:
+    reboot_timeout: 120
+  when: antenna_result is changed
+
+- name: Set WLAN regulatory domain
+  ansible.builtin.template:
+    src: cfg80211.conf.j2
+    dest: /etc/modprobe.d/cfg80211.conf
+    mode: "0644"
+
+- name: Apply WLAN regulatory domain immediately
+  ansible.builtin.command: "iw reg set {{ wifi_country }}"
+  changed_when: false
+
+- name: Enable RevPi WLAN radio
+  ansible.builtin.command: revpi-config enable ieee80211
+  register: wlan_result
+  changed_when: "'already enabled' not in wlan_result.stdout"
+
+- name: Check existing NetworkManager connections
+  ansible.builtin.command: nmcli -t -f NAME connection show
+  register: nm_connections
+  changed_when: false
+
+- name: Rescan for wifi networks
+  ansible.builtin.command: nmcli device wifi rescan
+  when: wifi_ssid not in nm_connections.stdout_lines
+  changed_when: false
+  failed_when: false
+
+- name: Wait for the configured SSID to show up in scan results
+  ansible.builtin.command: nmcli -t -f SSID device wifi list
+  register: wifi_scan
+  until: wifi_ssid in wifi_scan.stdout_lines
+  retries: 6
+  delay: 5
+  when: wifi_ssid not in nm_connections.stdout_lines
+  changed_when: false
+
+- name: Connect to wifi network
+  ansible.builtin.command: >
+    nmcli device wifi connect {{ wifi_ssid | quote }}
+    password {{ wifi_password | quote }}
+  when: wifi_ssid not in nm_connections.stdout_lines
+  register: wifi_connect
+  failed_when: false
+  no_log: true
+
+- name: Fail with the real error if the connection didn't work
+  ansible.builtin.fail:
+    msg: "{{ wifi_connect.stderr }}"
+  when: wifi_connect is not skipped and wifi_connect.rc != 0
