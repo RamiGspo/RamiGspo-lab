@@ -1,0 +1,3 @@
+---
+meerk40t_user: pi
+meerk40t_venv: "/home/{{ meerk40t_user }}/.venvs/meerk40t"

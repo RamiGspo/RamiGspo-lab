@@ -1,0 +1,44 @@
+---
+- name: Install system packages for MeerK40t
+  ansible.builtin.apt:
+    name:
+      - python3-wxgtk4.0
+      - python3-pip
+      - python3-venv
+      - python3-pil
+      - xauth
+    state: present
+    update_cache: true
+
+- name: Add {{ meerk40t_user }} to dialout group
+  ansible.builtin.user:
+    name: "{{ meerk40t_user }}"
+    groups: dialout
+    append: true
+
+- name: Create MeerK40t virtualenv with system site packages
+  ansible.builtin.command:
+    cmd: "python3 -m venv --system-site-packages {{ meerk40t_venv }}"
+    creates: "{{ meerk40t_venv }}/bin/python3"
+  become_user: "{{ meerk40t_user }}"
+
+- name: Install MeerK40t in the virtualenv
+  ansible.builtin.pip:
+    name: meerk40t
+    virtualenv: "{{ meerk40t_venv }}"
+    state: present
+  become_user: "{{ meerk40t_user }}"
+
+- name: Enable X11 forwarding in sshd
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?\s*X11Forwarding'
+    line: X11Forwarding yes
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart sshd
+
+- name: Install meerk40t wrapper script
+  ansible.builtin.template:
+    src: meerk40t.sh.j2
+    dest: /usr/local/bin/meerk40t
+    mode: "0755"
