@@ -1,0 +1,6 @@
+---
+- name: Configure wifi
+  hosts: laser_nodes
+  become: true
+  roles:
+    - wifi
