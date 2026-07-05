@@ -11,6 +11,7 @@ Run from this directory (`ansible/`), so `ansible.cfg` is picked up automaticall
 
 ```bash
 ansible-playbook workstation.yml
+ansible-playbook wifi.yml --ask-vault-pass
 ansible-playbook laser.yml --ask-vault-pass
 ```
 
@@ -36,3 +37,6 @@ The `wifi` role enables the external antenna (rebooting once, only the first
 time), sets the regulatory domain (`wifi_country`, default `DE`), and
 connects to `wifi_ssid` via NetworkManager. If the SSID isn't in range, the
 playbook fails with an error instead of connecting silently to nothing.
+
+Use `wifi.yml` instead of `laser.yml` to configure wifi without installing
+meerk40t.
