@@ -1,0 +1,6 @@
+---
+- name: Configure laser nodes
+  hosts: laser_nodes
+  become: true
+  roles:
+    - meerk40t
