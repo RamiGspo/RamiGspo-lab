@@ -1,0 +1,17 @@
+- name: Install RetroArch
+  ansible.builtin.apt:
+    name:
+      - retroarch
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Allow user to access GPU, sound and input devices
+  ansible.builtin.user:
+    name: "{{ retroarch_user }}"
+    groups:
+      - video
+      - render
+      - audio
+      - input
+    append: true
