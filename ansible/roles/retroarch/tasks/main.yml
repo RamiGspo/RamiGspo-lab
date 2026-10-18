@@ -2,6 +2,8 @@
   ansible.builtin.apt:
     name:
       - retroarch
+      - unzip
+      - acl  # lets Ansible become the unprivileged arcade user
     state: present
     update_cache: true
     cache_valid_time: 3600
@@ -15,3 +17,19 @@
       - audio
       - input
     append: true
+
+- name: Create cores directory
+  become_user: "{{ retroarch_user }}"
+  ansible.builtin.file:
+    path: "{{ retroarch_cores_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download libretro cores
+  become_user: "{{ retroarch_user }}"
+  ansible.builtin.unarchive:
+    src: "{{ retroarch_cores_url }}/{{ item }}_libretro.so.zip"
+    dest: "{{ retroarch_cores_dir }}"
+    remote_src: true
+    creates: "{{ retroarch_cores_dir }}/{{ item }}_libretro.so"
+  loop: "{{ retroarch_cores }}"
