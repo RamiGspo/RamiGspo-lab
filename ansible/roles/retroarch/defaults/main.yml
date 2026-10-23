@@ -1,6 +1,7 @@
 retroarch_user: "{{ ansible_user }}"
 retroarch_config_dir: "/home/{{ retroarch_user }}/.config/retroarch"
 retroarch_cores_dir: "{{ retroarch_config_dir }}/cores"
+retroarch_arcade_config: "{{ retroarch_config_dir }}/arcade.cfg"
 
 # Debian disables the in-menu core updater, so cores come from the libretro buildbot.
 retroarch_cores_url: "https://buildbot.libretro.com/nightly/linux/{{ ansible_facts['architecture'] }}/latest"
@@ -12,3 +13,17 @@ retroarch_cores:
   - gambatte  # Game Boy, Game Boy Color
   - mgba  # Game Boy Advance
   - pcsx_rearmed  # PlayStation
+
+retroarch_roms_dir: "/home/{{ retroarch_user }}/roms"
+retroarch_rom_systems:
+  - nes
+  - snes
+  - mastersystem
+  - megadrive
+  - gamegear
+  - neogeo
+  - arcade
+  - gb
+  - gbc
+  - gba
+  - psx

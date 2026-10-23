@@ -33,3 +33,18 @@
     remote_src: true
     creates: "{{ retroarch_cores_dir }}/{{ item }}_libretro.so"
   loop: "{{ retroarch_cores }}"
+
+- name: Create ROM directories
+  become_user: "{{ retroarch_user }}"
+  ansible.builtin.file:
+    path: "{{ retroarch_roms_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ retroarch_rom_systems }}"
+
+- name: Install arcade settings
+  become_user: "{{ retroarch_user }}"
+  ansible.builtin.template:
+    src: arcade.cfg.j2
+    dest: "{{ retroarch_arcade_config }}"
+    mode: "0644"
