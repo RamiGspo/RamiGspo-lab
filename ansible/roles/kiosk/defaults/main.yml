@@ -1,0 +1,2 @@
+kiosk_user: "{{ ansible_user }}"
+kiosk_tty: tty1

@@ -1,0 +1,3 @@
+# Autologin, the boot target and the login script only take effect on boot.
+- name: Reboot into the kiosk
+  ansible.builtin.reboot:

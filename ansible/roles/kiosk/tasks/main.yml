@@ -1,0 +1,45 @@
+- name: Install Wayland kiosk compositor
+  ansible.builtin.apt:
+    name:
+      - cage
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Boot to console instead of a desktop
+  ansible.builtin.file:
+    src: /lib/systemd/system/multi-user.target
+    dest: /etc/systemd/system/default.target
+    state: link
+  notify: Reboot into the kiosk
+
+- name: Create getty override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/getty@{{ kiosk_tty }}.service.d
+    state: directory
+    mode: "0755"
+
+- name: Log in automatically on the kiosk console
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/getty@{{ kiosk_tty }}.service.d/autologin.conf
+    mode: "0644"
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=-/sbin/agetty --autologin {{ kiosk_user }} --noclear %I $TERM
+  notify: Reboot into the kiosk
+
+# When the command exits, the session ends and getty logs in again, restarting it.
+# cage -s keeps Ctrl+Alt+F2 available to reach a local shell.
+- name: Start kiosk command on login
+  ansible.builtin.blockinfile:
+    path: "/home/{{ kiosk_user }}/.profile"
+    create: true
+    owner: "{{ kiosk_user }}"
+    group: "{{ kiosk_user }}"
+    mode: "0644"
+    block: |
+      if [ "$(tty)" = "/dev/{{ kiosk_tty }}" ]; then
+        exec cage -s -- {{ kiosk_command }}
+      fi
+  notify: Reboot into the kiosk

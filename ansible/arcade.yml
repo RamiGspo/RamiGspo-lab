@@ -5,3 +5,7 @@
   roles:
     - base
     - retroarch
+    - role: kiosk
+      vars:
+        kiosk_user: "{{ retroarch_user }}"
+        kiosk_command: "retroarch --appendconfig {{ retroarch_arcade_config }}"
