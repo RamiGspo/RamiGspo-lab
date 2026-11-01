@@ -42,6 +42,14 @@
     mode: "0755"
   loop: "{{ retroarch_rom_systems }}"
 
+- name: Download free homebrew games
+  become_user: "{{ retroarch_user }}"
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: "{{ retroarch_roms_dir }}/{{ item.system }}/{{ item.url | basename }}"
+    mode: "0644"
+  loop: "{{ retroarch_free_roms }}"
+
 - name: Install arcade settings
   become_user: "{{ retroarch_user }}"
   ansible.builtin.template:

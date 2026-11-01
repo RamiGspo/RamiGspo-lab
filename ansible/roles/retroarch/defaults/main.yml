@@ -27,3 +27,10 @@ retroarch_rom_systems:
   - gbc
   - gba
   - psx
+
+# Homebrew games their authors publish for free download on GitHub releases.
+retroarch_free_roms:
+  - system: megadrive
+    url: https://github.com/andwn/cave-story-md/releases/download/v0.8.8/doukutsu-en.gen
+  - system: gbc
+    url: https://github.com/AntonioND/ucity/releases/download/v1.3/ucity.gbc
