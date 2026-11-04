@@ -1,0 +1,11 @@
+# rsync only sends new or changed files, so re-running after adding games is quick.
+# Runs as the SSH user without sudo, so it must be the arcade user for the files
+# to belong to it.
+# Permissions stay as on the arcade: copying them from a USB disk would fight
+# with the ROM directories this role creates.
+- name: Copy ROMs from the local collection
+  become: false
+  ansible.posix.synchronize:
+    src: "{{ retroarch_roms_source }}/"
+    dest: "{{ retroarch_roms_dir }}/"
+    perms: false
