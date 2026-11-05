@@ -1,0 +1,40 @@
+- name: Install DKMS and kernel headers
+  ansible.builtin.apt:
+    name:
+      - dkms
+      - git
+      # Headers for the running kernel, which DKMS builds against now,
+      # and for future kernels, so DKMS can rebuild on kernel updates.
+      - "linux-headers-{{ ansible_facts['kernel'] }}"
+      - "{{ xpad_kernel_headers }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Download xpad driver source
+  ansible.builtin.git:
+    repo: "{{ xpad_repo }}"
+    version: "{{ xpad_commit }}"
+    dest: "{{ xpad_source_dir }}"
+
+# The DKMS version stays the same across commits, so the build of an
+# earlier commit is removed first. The marker names commit and kernel,
+# so a run that stops halfway gets finished by the next one.
+# DKMS itself rebuilds the driver on kernel updates.
+- name: Build and install xpad driver
+  ansible.builtin.shell:
+    cmd: |
+      set -e
+      dkms remove xpad/{{ xpad_dkms_version }} --all || true
+      dkms install xpad/{{ xpad_dkms_version }}
+      mkdir -p {{ xpad_build_marker | dirname }}
+      touch {{ xpad_build_marker }}
+    creates: "{{ xpad_build_marker }}"
+  notify: Reload xpad driver
+
+# Linux only loads xpad on its own when an XInput pad is plugged in at boot.
+- name: Load xpad driver now and on every boot
+  community.general.modprobe:
+    name: xpad
+    state: present
+    persistent: present

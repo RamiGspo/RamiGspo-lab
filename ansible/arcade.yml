@@ -5,6 +5,7 @@
   roles:
     - base
     - retroarch
+    - xpad
     - role: kiosk
       vars:
         kiosk_user: "{{ retroarch_user }}"

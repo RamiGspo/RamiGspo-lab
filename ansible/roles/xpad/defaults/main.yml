@@ -1,0 +1,8 @@
+# The RevPi kernel ships without the xpad driver, so it is built with DKMS.
+xpad_kernel_headers: linux-headers-revpi-v8
+xpad_repo: https://github.com/paroj/xpad
+xpad_commit: 9caad15ba366c26337bfbcf3ee1144a6cc07d9ca
+# Must match PACKAGE_VERSION in the repo's dkms.conf.
+xpad_dkms_version: "0.4"
+xpad_source_dir: "/usr/src/xpad-{{ xpad_dkms_version }}"
+xpad_build_marker: "/var/lib/xpad/built-{{ xpad_commit }}-{{ ansible_facts['kernel'] }}"

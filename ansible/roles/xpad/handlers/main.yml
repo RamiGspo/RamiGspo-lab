@@ -1,0 +1,4 @@
+- name: Reload xpad driver
+  ansible.builtin.shell:
+    cmd: modprobe -r xpad && modprobe xpad
+  changed_when: true
