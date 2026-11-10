@@ -3,4 +3,6 @@
 libretro_directory = "{{ retroarch_cores_dir }}"
 rgui_browser_directory = "{{ retroarch_roms_dir }}"
 video_fullscreen = "true"
+# The RevPi image runs no sound server, so the default "pulse" driver is silent.
+audio_driver = "alsa"
 joypad_autoconfig_dir = "{{ retroarch_autoconfig_dir }}/udev"
