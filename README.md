@@ -21,7 +21,37 @@ This is a personal lab for my Linux workstation (Ubuntu/Debian).
 
 ## Ansible
 
-Roles are custom (no Ansible Galaxy). Targets are my Ubuntu/Debian workstations.
+Roles are custom (no Ansible Galaxy). Targets are my Ubuntu/Debian workstations
+and RevPi devices.
+
+## Arcade (RevPi Connect 5)
+
+`ansible/arcade.yml` turns a RevPi running Debian trixie into a retro console:
+it boots straight into RetroArch, fullscreen on HDMI.
+
+1. Flash the RevPi trixie image and connect HDMI, a gamepad and the network.
+2. Optional: to copy your ROM collection (one subfolder per console, same names
+   as `~/roms/`), set its local path as `retroarch_roms_source` for the host
+   in your inventory.
+3. Run the playbook. The first run reboots the RevPi into RetroArch:
+
+   ```sh
+   cd ansible
+   ansible-playbook arcade.yml --ask-vault-pass
+   ```
+
+   Run it again after adding games: it only copies what is new.
+4. In RetroArch: *Load Content* → `/home/pi/` → `roms` → console → ROM → core.
+
+Notes:
+
+- Ansible downloads free homebrew games into `~/roms/` (Cave Story for Mega Drive,
+  µCity for Game Boy Color).
+- Neo Geo needs the BIOS `neogeo.zip` next to the games in `~/roms/neogeo/`.
+- PlayStation needs a BIOS in `~/.config/retroarch/system/`.
+- Settings managed by Ansible live in `~/.config/retroarch/arcade.cfg`;
+  everything else can be changed from the RetroArch menu.
+- Quitting RetroArch restarts it. Ctrl+Alt+F2 opens a local shell; SSH always works.
 
 ## Requirements
 
