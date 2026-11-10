@@ -1,0 +1,7 @@
+# The kiosk session starts RetroArch again as soon as it exits.
+- name: Restart RetroArch
+  ansible.builtin.command:
+    cmd: pkill -x retroarch
+  register: retroarch_kill
+  changed_when: retroarch_kill.rc == 0
+  failed_when: retroarch_kill.rc > 1

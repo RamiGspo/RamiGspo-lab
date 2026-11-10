@@ -4,6 +4,7 @@
       - retroarch
       - unzip
       - acl  # lets Ansible become the unprivileged arcade user
+      - git
       - rsync  # copies the local ROM collection
     state: present
     update_cache: true
@@ -56,9 +57,18 @@
   ansible.builtin.include_tasks: roms.yml
   when: retroarch_roms_source is defined
 
+- name: Download gamepad button mappings
+  become_user: "{{ retroarch_user }}"
+  ansible.builtin.git:
+    repo: "{{ retroarch_autoconfig_repo }}"
+    version: "{{ retroarch_autoconfig_commit }}"
+    dest: "{{ retroarch_autoconfig_dir }}"
+  notify: Restart RetroArch
+
 - name: Install arcade settings
   become_user: "{{ retroarch_user }}"
   ansible.builtin.template:
     src: arcade.cfg.j2
     dest: "{{ retroarch_arcade_config }}"
     mode: "0644"
+  notify: Restart RetroArch

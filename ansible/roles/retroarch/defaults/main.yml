@@ -3,6 +3,12 @@ retroarch_config_dir: "/home/{{ retroarch_user }}/.config/retroarch"
 retroarch_cores_dir: "{{ retroarch_config_dir }}/cores"
 retroarch_arcade_config: "{{ retroarch_config_dir }}/arcade.cfg"
 
+# Button mappings for known gamepads. Debian ships none, so without them
+# RetroArch reports pads as "not configured".
+retroarch_autoconfig_repo: https://github.com/libretro/retroarch-joypad-autoconfig
+retroarch_autoconfig_commit: 2e3b8a2728d5efd00fa0207d07ba2488b89e87b2
+retroarch_autoconfig_dir: "{{ retroarch_config_dir }}/joypad-autoconfig"
+
 # Debian disables the in-menu core updater, so cores come from the libretro buildbot.
 retroarch_cores_url: "https://buildbot.libretro.com/nightly/linux/{{ ansible_facts['architecture'] }}/latest"
 retroarch_cores:
