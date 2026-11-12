@@ -44,11 +44,36 @@ it boots straight into RetroArch, fullscreen on HDMI.
 
    ```sh
    cd ansible
+   # my devices
    ansible-playbook arcade.yml --ask-vault-pass
+   # your own RevPi, see below
+   ansible-playbook -i my-revpi.yml arcade.yml -K
    ```
 
    Run it again after adding games: it only copies what is new.
 4. In RetroArch: *Load Content* → `/home/pi/` → `roms` → console → ROM → core.
+
+For your own RevPi Connect 5, first copy your SSH key to it. Copying ROMs
+needs key login, and it also accepts the RevPi's host key:
+
+```sh
+ssh-copy-id pi@RevPi12345.local
+```
+
+Then write a small inventory and keep it outside `inventory/`, so my vault
+is not loaded:
+
+```yaml
+# my-revpi.yml
+revpi:
+  hosts:
+    my-revpi:
+      ansible_host: RevPi12345.local
+      ansible_user: pi
+      retroarch_roms_source: /path/to/your/roms  # optional
+```
+
+`-K` asks for the sudo password, the one printed on the RevPi.
 
 Notes:
 
