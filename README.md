@@ -88,5 +88,7 @@ Notes:
 ## Requirements
 
 - Docker + Docker Compose
-- Ansible 2.14+
+- Ansible 2.14+ with the `ansible.posix` and `community.general` collections
+  (both ship with the full `ansible` package)
+- `rsync`, to copy ROMs to a RevPi
 - Python 3.10+
