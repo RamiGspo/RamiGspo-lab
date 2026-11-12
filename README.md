@@ -2,7 +2,7 @@
 
 Experimenting with AI made me realize (again) how useful it is to keep things documented,
 for my future self and for anyone learning or working with me.
-This is a personal lab for my Linux workstation (Ubuntu/Debian).
+This is a personal lab for my Linux workstation (Ubuntu/Debian) and RevPi devices.
 
 ## Contents
 
@@ -21,8 +21,15 @@ This is a personal lab for my Linux workstation (Ubuntu/Debian).
 
 ## Ansible
 
-Roles are custom (no Ansible Galaxy). Targets are my Ubuntu/Debian workstations
-and RevPi devices.
+Roles are custom (no Ansible Galaxy). Run the playbooks from `ansible/`:
+
+| Playbook | Target |
+|----------|--------|
+| `workstation.yml` | this machine (`localhost`) |
+| `arcade.yml` | RevPi devices in the `revpi` group |
+
+`inventory/hosts.yml` lists my own devices. Their passwords live in an
+Ansible Vault, `inventory/group_vars/revpi/vault.yml`.
 
 ## Arcade (RevPi Connect 5)
 
