@@ -83,6 +83,9 @@ Notes:
 - PlayStation needs a BIOS in `~/.config/retroarch/system/`.
 - Settings managed by Ansible live in `~/.config/retroarch/arcade.cfg`;
   everything else can be changed from the RetroArch menu.
+- F1 on a keyboard opens the RetroArch menu.
+- If RetroArch says the gamepad is "not configured", unplug it and plug it in
+  again: some sticks pick their USB mode when they are connected.
 - Quitting RetroArch restarts it. Ctrl+Alt+F2 opens a local shell; SSH always works.
 
 ## Requirements
