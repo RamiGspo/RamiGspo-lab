@@ -1,0 +1,197 @@
+diff --git a/docs/content/docs/developer/setup.mdx b/docs/content/docs/developer/setup.mdx
+index d4a777a..3e179de 100644
+--- a/docs/content/docs/developer/setup.mdx
++++ b/docs/content/docs/developer/setup.mdx
+@@ -38,12 +38,18 @@ Ensure you have these installed:
+     python3.12 --version  # macOS/Linux — should be 3.12.x
+     py -3.12 --version    # Windows
+     ```
+-    Voicebox pins its venv to 3.12 to match CI, because some dependencies have no 3.13 release yet. On Debian/Ubuntu also install `python3.12-venv`.
++    Voicebox pins its venv to 3.12 to match CI, because some dependencies have no 3.13 release yet. It also needs the development headers (`Python.h`) to compile `pyopenjtalk`. On Debian/Ubuntu also install `python3.12-venv` and `python3.12-dev`; if your release no longer packages 3.12 (e.g. Ubuntu 26.04), use `uv python install 3.12`, which includes the headers.
+   </Card>
+   <Card title="Rust" icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>}>
+     [Install Rust](https://rustup.rs)
+     ```bash
+-    rustc --version
++    rustc --version     # 1.88 or newer
++    rustup update stable
++    ```
++    On Linux, Tauri also needs system libraries:
++    ```bash
++    sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
++      librsvg2-dev libasound2-dev libayatana-appindicator3-dev patchelf
+     ```
+   </Card>
+   <Card title="Just" icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7V4h3"/><path d="M7 4h14v6h-2V6H7V4Z"/><path d="M4 10v10h16V10H4Z"/></svg>}>
+diff --git a/justfile b/justfile
+index 4e12685..0ab68b8 100644
+--- a/justfile
++++ b/justfile
+@@ -22,6 +22,11 @@ set windows-shell := ["powershell", "-NoProfile", "-Command"]
+ # Keep in sync with that and with actions/setup-python in .github/workflows.
+ python_version := "3.12"
+ 
++# Oldest rustc that builds tauri/src-tauri: the highest rust-version among the
++# locked crates (time 0.3.46 needs 1.88; edition-2024 crates already break cargo
++# before 1.85). Raise it when Cargo.lock pulls in something newer.
++rust_min_version := "1.88"
++
+ # ─── Setup ────────────────────────────────────────────────────────────
+ 
+ # Full project setup (python venv + JS deps + dev sidecar)
+@@ -47,6 +52,14 @@ setup-python:
+         "{{ python }}" -m pip --version >/dev/null 2>&1
+     }
+ 
++    # pyopenjtalk (pulled in by misaki[ja]) ships no wheel and compiles against
++    # Python.h. A distro interpreter can lack the headers, and on Ubuntu 26.04 a
++    # python3.12 left over from 24.04 has no python3.12-dev to install at all.
++    # In a venv, sysconfig points at the base interpreter's include dir.
++    has_headers() {
++        "$1" -c 'import os, sys, sysconfig; sys.exit(not os.path.isfile(os.path.join(sysconfig.get_paths()["include"], "Python.h")))' 2>/dev/null
++    }
++
+     # Every interpreter on PATH that could be the pinned version, plus uv's, which
+     # keeps its Pythons off PATH. More than one can match, and the first is not
+     # necessarily the good one.
+@@ -57,10 +70,11 @@ setup-python:
+         fi
+     }
+ 
+-    # Reuse the venv only if it is on the pinned version and has a working pip: a
+-    # wrong-version venv resolves dependencies against the wrong Python, and a
+-    # broken pip means an earlier `-m venv` was interrupted or the venv was moved.
+-    if [ -d "{{ venv }}" ] && ! { is_pinned "{{ python }}" && pip_works; }; then
++    # Reuse the venv only if it is on the pinned version, has a working pip and was
++    # built from an interpreter with headers: a wrong-version venv resolves
++    # dependencies against the wrong Python, a broken pip means an earlier `-m venv`
++    # was interrupted or the venv was moved, and without headers pyopenjtalk fails.
++    if [ -d "{{ venv }}" ] && ! { is_pinned "{{ python }}" && pip_works && has_headers "{{ python }}"; }; then
+         echo "Existing venv is not a working Python {{ python_version }} environment — recreating..."
+         rm -rf "{{ venv }}"
+     fi
+@@ -75,6 +89,10 @@ setup-python:
+         log="$(mktemp)"
+         while IFS= read -r py; do
+             is_pinned "$py" || continue
++            if ! has_headers "$py"; then
++                echo "Skipping $py: no Python.h (development headers missing)."
++                continue
++            fi
+             echo "Creating Python virtual environment with $py ..."
+             "$py" -m venv "{{ venv }}" >>"$log" 2>&1 && pip_works && break
+             echo "  ...it reports {{ python_version }} but cannot build a working venv; trying the next."
+@@ -86,11 +104,13 @@ setup-python:
+ 
+     if ! pip_works; then
+         echo ""
+-        echo "ERROR: Voicebox needs a Python {{ python_version }} that can create virtual"
+-        echo "       environments (see requires-python in backend/pyproject.toml)."
+-        echo "  Any:    uv python install {{ python_version }}"
++        echo "ERROR: Voicebox needs a Python {{ python_version }} with development headers"
++        echo "       (Python.h) that can create virtual environments (see"
++        echo "       requires-python in backend/pyproject.toml)."
++        echo "  Any:    uv python install {{ python_version }}   (includes headers)"
+         echo "  macOS:  brew install python@{{ python_version }}"
+-        echo "  Debian: sudo apt install python{{ python_version }} python{{ python_version }}-venv"
++        echo "  Debian: sudo apt install python{{ python_version }} python{{ python_version }}-venv python{{ python_version }}-dev"
++        echo "          (if your release no longer packages {{ python_version }}, use uv)"
+         echo ""
+         echo "Then re-run: just setup"
+         exit 1
+@@ -112,6 +132,11 @@ setup-python:
+             fi
+             echo "Detected AMD GPU — installing ROCm PyTorch (rocm${rocm_ver})..."
+             torch_index="https://download.pytorch.org/whl/rocm${rocm_ver}"
++        else
++            # The PyPI torch wheel bundles ~2.5 GB of CUDA libraries that a
++            # machine without a GPU never loads.
++            echo "No NVIDIA or AMD GPU detected — installing CPU-only PyTorch..."
++            torch_index="https://download.pytorch.org/whl/cpu"
+         fi
+         if [ -n "$torch_index" ]; then
+             "{{ python }}" -m pip install torch torchaudio --index-url "$torch_index"
+@@ -223,7 +248,7 @@ setup-js:
+ 
+ # Start backend (if not already running) + frontend for development
+ [unix]
+-dev: _ensure-venv _ensure-sidecar
++dev: _ensure-venv _check-tauri-deps _ensure-sidecar
+     #!/usr/bin/env bash
+     set -euo pipefail
+ 
+@@ -264,7 +289,7 @@ dev-backend: _ensure-venv
+ 
+ # Start Tauri desktop app only (backend must be running separately)
+ [unix]
+-dev-frontend: _ensure-sidecar
++dev-frontend: _check-tauri-deps _ensure-sidecar
+     cd {{ tauri_dir }} && bun run tauri dev
+ 
+ [windows]
+@@ -367,7 +392,7 @@ build-local: build-server build-server-cuda build-tauri
+ 
+ # Build Tauri desktop app
+ [unix]
+-build-tauri:
++build-tauri: _check-tauri-deps
+     cd {{ tauri_dir }} && bun run tauri build
+ 
+ [windows]
+@@ -548,6 +573,38 @@ _ensure-venv:
+ _ensure-venv:
+     if (-not (Test-Path "{{ venv }}")) { Write-Host "Python venv not found. Run: just setup"; exit 1 }
+ 
++# Fail fast on a too-old Rust or missing Linux system libraries, instead of
++# minutes into the cargo build
++[private, unix]
++_check-tauri-deps:
++    #!/usr/bin/env bash
++    set -euo pipefail
++
++    if ! command -v rustc >/dev/null 2>&1; then
++        echo "ERROR: Rust not found. Install it from https://rustup.rs"
++        exit 1
++    fi
++    have="$(rustc --version | awk '{print $2}')"
++    if [ "$(printf '%s\n%s\n' "{{ rust_min_version }}" "$have" | sort -V | head -n1)" != "{{ rust_min_version }}" ]; then
++        echo "ERROR: rustc $have is too old; Voicebox needs {{ rust_min_version }} or newer."
++        echo "  Update it with: rustup update stable"
++        exit 1
++    fi
++
++    if [ "$(uname)" = "Linux" ]; then
++        missing=()
++        for lib in webkit2gtk-4.1 gtk+-3.0 libsoup-3.0 librsvg-2.0 alsa; do
++            pkg-config --exists "$lib" 2>/dev/null || missing+=("$lib")
++        done
++        # appindicator is left out: the tray loads it with dlopen at runtime
++        if [ ${#missing[@]} -gt 0 ]; then
++            echo "ERROR: Missing system libraries for the Tauri build: ${missing[*]}"
++            echo "  Debian/Ubuntu: sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \\"
++            echo "                 librsvg2-dev libasound2-dev libayatana-appindicator3-dev patchelf"
++            exit 1
++        fi
++    fi
++
+ # Ensure Tauri dev sidecar placeholder exists
+ [private]
+ _ensure-sidecar:
+diff --git a/scripts/setup-dev-sidecar.js b/scripts/setup-dev-sidecar.js
+index de49965..ccf59bc 100644
+--- a/scripts/setup-dev-sidecar.js
++++ b/scripts/setup-dev-sidecar.js
+@@ -26,7 +26,12 @@ const MIN_REAL_BINARY_SIZE = 10000;
+ // Get the current platform's target triple
+ function getTargetTriple() {
+   try {
+-    const triple = execSync('rustc --print host-tuple', { encoding: 'utf-8' }).trim();
++    // stderr is dropped: rustc before 1.84 rejects `host-tuple` noisily, and the
++    // fallback below covers it
++    const triple = execSync('rustc --print host-tuple', {
++      encoding: 'utf-8',
++      stdio: ['ignore', 'pipe', 'ignore'],
++    }).trim();
+     return triple;
+   } catch {
+     // Fallback detection

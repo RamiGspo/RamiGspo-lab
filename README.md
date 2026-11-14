@@ -10,6 +10,7 @@ This is a personal lab for my Linux workstation (Ubuntu/Debian) and RevPi device
 |------|-------------|
 | `ansible/` | Ansible playbooks and roles for Ubuntu/Debian setup |
 | `docker/ai-stack/` | Docker Compose stack for local AI tools |
+| `voicebox/` | Notes and a setup patch for running Voicebox on Ubuntu |
 
 ## AI Stack
 
@@ -18,6 +19,7 @@ This is a personal lab for my Linux workstation (Ubuntu/Debian) and RevPi device
 - **Cline**: AI coding assistant (VS Code extension)
 - **Whisper**: local speech-to-text
 - **Chatterbox**: local TTS with voice cloning
+- **Voicebox**: desktop voice studio (TTS, voice cloning, transcription), see `voicebox/`
 
 ## Ansible
 
